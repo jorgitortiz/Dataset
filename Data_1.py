@@ -13,13 +13,17 @@ from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import r2_score
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import cross_val_predict
+from sklearn.linear_model import Ridge
+from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 def Course(df):
     df.replace("?", np.nan, inplace=True)
-    print(df.head(5))
-    print(df.head(6))
+    print("To see the first five: print(df.head(5))")
+    print("To see the last five: df.tail(6))")
 #Evaluation missing values
     missing_data = df.isnull()
 #Know, what are variable are missing values and it is quantitiy
@@ -35,27 +39,34 @@ def Course(df):
     avg_norm_loss = df["normalized-losses"].astype("float").mean(axis=0)
     print("Average of normalized-losses:", avg_norm_loss)
     df["normalized-losses"].replace(np.nan, avg_norm_loss, inplace=True)
+
     avg_bore = df["bore"].astype("float").mean(axis=0)
     print("Average of bore:", avg_bore)
     df["bore"].replace(np.nan, avg_bore, inplace=True)
+
     avg_stroke = df["stroke"].astype("float").mean(axis=0)
     print("Average of stroke:", avg_stroke)
     df["stroke"].replace(np.nan, avg_stroke, inplace=True)
+
     avg_horsepower = df["horsepower" ].astype("float").mean(axis=0)
     print("Average of horsepower:", avg_horsepower)
     df["horsepower"].replace(np.nan, avg_horsepower, inplace=True)
+
     avg_peak_rpm = df["peak-rpm"].astype("float").mean(axis=0)
     print("Average of stroke:", avg_peak_rpm)
     df["peak-rpm"].replace(np.nan, avg_peak_rpm, inplace=True)
+
     print(df['num-of-doors'].value_counts())
-# replace the missing 'num-of-doors' values by the most frequent
-    print(df['num-of-doors'].value_counts().idxmax())
     print("")
-    df["num-of-doors"].replace(np.nan, "four", inplace=True)
+# replace the missing 'num-of-doors' values by the most frequent
+    maxi = df['num-of-doors'].value_counts().idxmax()
+    df["num-of-doors"].replace(np.nan, maxi, inplace=True)
+
 # simply drop whole row with NaN in "price" column
     df.dropna(subset=["price"], axis=0, inplace=True)
 # reset index, because we droped two rows
     df.reset_index(drop=True, inplace=True)
+
 # Convert data types to proper format
     df[["bore", "stroke"]] = df[["bore", "stroke"]].astype("float")
     df[["normalized-losses"]] = df[["normalized-losses"]].astype("int")
@@ -63,6 +74,7 @@ def Course(df):
     df[["peak-rpm"]] = df[["peak-rpm"]].astype("float")
     print(df.dtypes)
     print("")
+
 # Convert mpg to L/100km by mathematical operation (235 divided by mpg)
     df['city-L/100km'] = 235 / df["city-mpg"]
     df['highway-L/100km'] = 235 / df["highway-mpg"]
@@ -76,8 +88,9 @@ def Course(df):
 
     print(df.describe(include='all'))
     print("")
+
 # Convert data to correct format
-    df["horsepower"] = df["horsepower"].astype(int, copy=True)
+    df["horsepower"] = df["horsepower"].astype(int)
     plt.hist(df["horsepower"])
 
     # set x/y labels and plot title
@@ -85,13 +98,12 @@ def Course(df):
     plt.ylabel("count")
     plt.title("horsepower bins")
     plt.show()
+
 # We build a bin array, with a minimum value to a maximum value
     bins = np.linspace(min(df["horsepower"]), max(df["horsepower"]), 4)
-    print(bins)
-    print("")
     group_names = ['Low', 'Medium', 'High']
     df['horsepower-binned'] = pd.cut(df['horsepower'], bins, labels=group_names, include_lowest=True)
-    print(df[['horsepower', 'horsepower-binned']].head(10))
+    #print(df[['horsepower', 'horsepower-binned']].head(10))
     print("")
     print(df["horsepower-binned"].value_counts())
     plt.bar(group_names, df["horsepower-binned"].value_counts())
@@ -488,7 +500,231 @@ def Course(df):
     plt.plot(new_input, yhat)
     plt.show()
 
+    ### MODEL EVALUATION AND REFINEMENT
 
+    df = df._get_numeric_data()
+    print(df.head())
+
+    def DistributionPlot(RedFunction, BlueFunction, RedName, BlueName, Title):
+        width = 12
+        height = 10
+        plt.figure(figsize=(width, height))
+
+        ax1 = sns.distplot(RedFunction, hist=False, color="r", label=RedName)
+        ax2 = sns.distplot(BlueFunction, hist=False, color="b", label=BlueName, ax=ax1)
+
+        plt.title(Title)
+        plt.xlabel('Price (in dollars)')
+        plt.ylabel('Proportion of Cars')
+
+        plt.show()
+        plt.close()
+
+    def PollyPlot(xtrain, xtest, y_train, y_test, lr, poly_transform):
+        width = 12
+        height = 10
+        plt.figure(figsize=(width, height))
+
+        # training data
+        # testing data
+        # lr:  linear regression object
+        # poly_transform:  polynomial transformation object
+
+        xmax = max([xtrain.values.max(), xtest.values.max()])
+
+        xmin = min([xtrain.values.min(), xtest.values.min()])
+
+        x = np.arange(xmin, xmax, 0.1)
+
+        plt.plot(xtrain, y_train, 'ro', label='Training Data')
+        plt.plot(xtest, y_test, 'go', label='Test Data')
+        plt.plot(x, lr.predict(poly_transform.fit_transform(x.reshape(-1, 1))), label='Predicted Function')
+        plt.ylim([-10000, 60000])
+        plt.ylabel('Price')
+        plt.legend()
+        plt.show()
+        plt.close()
+
+    print("Figur 4 A polynomial regression model, red dots represent training data, green dots represent test data, and the blue line represents the model prediction")
+    print("We see that the estimated function appears to track the data but around 200 horsepower, the function begins to diverge from the data points.")
+
+
+
+    y_data = df['price']
+    x_data = df.drop('price', axis=1)
+    print(y_data)
+    print(x_data)
+    x_train, x_test, y_train, y_test = train_test_split(x_data, y_data, test_size=0.15, random_state=1)
+    print("Find the R^2 on the test data using 15% of the data for training data")
+    print("number of test samples :", x_test.shape[0])
+    print("number of training samples:", x_train.shape[0])
+    # The test_size parameter sets the proportion of data that is split into the testing set. In the above, the testing set is set to 10% of the total dataset
+    print("")
+    x_train1, x_test1, y_train1, y_test1 = train_test_split(x_data, y_data, test_size=0.40, random_state=0)
+    print("Find the R^2 on the test data using 40% of the data for training data")
+    print("number of test samples :", x_test1.shape[0])
+    print("number of training samples:", x_train1.shape[0])
+    print("")
+    lre = LinearRegression()
+    lre.fit(x_train[['horsepower']], y_train)
+    lre.fit(x_train[['horsepower']], y_train)
+    print(lre.score(x_test[['horsepower']], y_test))
+    print("")
+    print(lre.score(x_train[['horsepower']], y_train))
+    print("")
+    print("Find the R^2 on the test data using 90% of the data for training data")
+    x_train1, x_test1, y_train1, y_test1 = train_test_split(x_data, y_data, test_size=0.1, random_state=0)
+    print("number of test samples :", x_test1.shape[0])
+    print("number of training samples:", x_train1.shape[0])
+    print("")
+    lre.fit(x_train[['horsepower']], y_train)
+    print(lre.score(x_test[['horsepower']], y_test))
+    print("")
+
+    Rcross = cross_val_score(lre, x_data[['horsepower']], y_data, cv=4)
+    print(Rcross)
+    print("")
+    print("The mean of the folds are", Rcross.mean(), "and the standard deviation is", Rcross.std())
+    print("")
+# We can use negative squared error as a score by setting the parameter 'scoring' metric to 'neg_mean_squared_error'.
+    print(-1 * cross_val_score(lre,x_data[['horsepower']], y_data,cv=4,scoring='neg_mean_squared_error'))
+    print("")
+    Rcross = cross_val_score(lre, x_data[['horsepower']], y_data, cv=2)
+    print(Rcross)
+    print("")
+
+    yhat = cross_val_predict(lre, x_data[['horsepower']], y_data, cv=4)
+    print(yhat[0:5])
+    print("")
+
+    lr = LinearRegression()
+    lr.fit(x_train[['horsepower', 'curb-weight', 'engine-size', 'highway-mpg']], y_train)
+
+    yhat_train = lr.predict(x_train[['horsepower', 'curb-weight', 'engine-size', 'highway-mpg']])
+    print(yhat_train[0:5])
+    print("")
+
+    yhat_test = lr.predict(x_test[['horsepower', 'curb-weight', 'engine-size', 'highway-mpg']])
+    print(yhat_test[0:5])
+    print("")
+
+#So far the model seems to be doing well in learning from the training dataset.
+# But what happens when the model encounters new data from the testing dataset?
+# When the model generates new values from the test data, we see the distribution
+# of the predicted values is much different from the actual target values.
+    Title = 'Distribution  Plot of  Predicted Value Using Training Data vs Training Data Distribution'
+    DistributionPlot(y_train, yhat_train, "Actual Values (Train)", "Predicted Values (Train)", Title)
+
+    Title = 'Distribution  Plot of  Predicted Value Using Test Data vs Data Distribution of Test Data'
+    DistributionPlot(y_test, yhat_test, "Actual Values (Test)", "Predicted Values (Test)", Title)
+
+    x_train, x_test, y_train, y_test = train_test_split(x_data, y_data, test_size=0.45, random_state=0)
+
+    pr = PolynomialFeatures(degree=5)
+    x_train_pr = pr.fit_transform(x_train[['horsepower']])
+    x_test_pr = pr.fit_transform(x_test[['horsepower']])
+
+    poly = LinearRegression()
+    poly.fit(x_train_pr, y_train)
+
+    yhat = poly.predict(x_test_pr)
+    yhat[0:5]
+
+    print("Predicted values:", yhat[0:4])
+    print("True values:", y_test[0:4].values)
+    print("")
+
+    PollyPlot(x_train[['horsepower']], x_test[['horsepower']], y_train, y_test, poly, pr)
+
+    print(poly.score(x_train_pr, y_train))
+    print("")
+    print(poly.score(x_test_pr, y_test))
+    print("We see the R^2 for the training data is 0.5567 while the R^2 on the test data was -29.87. The lower the R^2, the worse the model, a Negative R^2 is a sign of overfitting")
+
+    Rsqu_test = []
+
+    order = [1, 2, 3, 4]
+    for n in order:
+        pr = PolynomialFeatures(degree=n)
+
+        x_train_pr = pr.fit_transform(x_train[['horsepower']])
+
+        x_test_pr = pr.fit_transform(x_test[['horsepower']])
+
+        lr.fit(x_train_pr, y_train)
+
+        Rsqu_test.append(lr.score(x_test_pr, y_test))
+
+    plt.plot(order, Rsqu_test)
+    plt.xlabel('order')
+    plt.ylabel('R^2')
+    plt.title('R^2 Using Test Data')
+    plt.text(3, 0.75, 'Maximum R^2 ')
+    plt.show()
+
+    def f(order, test_data):
+        x_train, x_test, y_train, y_test = train_test_split(x_data, y_data, test_size=test_data, random_state=0)
+        pr = PolynomialFeatures(degree=order)
+        x_train_pr = pr.fit_transform(x_train[['horsepower']])
+        x_test_pr = pr.fit_transform(x_test[['horsepower']])
+        poly = LinearRegression()
+        poly.fit(x_train_pr, y_train)
+        PollyPlot(x_train[['horsepower']], x_test[['horsepower']], y_train, y_test, poly, pr)
+
+    f(0,0.05)
+    f(6,0.95)
+    f(1,0.05)
+
+    pr = PolynomialFeatures(degree=2)
+    x_train_pr = pr.fit_transform(x_train[['horsepower', 'curb-weight', 'engine-size', 'highway-mpg', 'normalized-losses', 'symboling']])
+    x_test_pr = pr.fit_transform(x_test[['horsepower', 'curb-weight', 'engine-size', 'highway-mpg', 'normalized-losses', 'symboling']])
+    print("Let's create a Ridge regression object, setting the regularization parameter to 0.1")
+    print("")
+    RigeModel = Ridge(alpha=0.1)
+    print("Like regular regression, you can fit the model using the method fit.")
+    print("")
+    RigeModel.fit(x_train_pr, y_train)
+    print("Similarly, you can obtain a prediction:")
+    print("")
+    yhat = RigeModel.predict(x_test_pr)
+    print('predicted:', yhat[0:4])
+    print('test set :', y_test[0:4].values)
+
+    Rsqu_test = []
+    Rsqu_train = []
+    dummy1 = []
+    ALFA = 10 * np.array(range(0, 1000))
+    for alfa in ALFA:
+        RigeModel = Ridge(alpha=alfa)
+        RigeModel.fit(x_train_pr, y_train)
+        Rsqu_test.append(RigeModel.score(x_test_pr, y_test))
+        Rsqu_train.append(RigeModel.score(x_train_pr, y_train))
+
+    width = 12
+    height = 10
+    plt.figure(figsize=(width, height))
+
+    plt.plot(ALFA, Rsqu_test, label='validation data  ')
+    plt.plot(ALFA, Rsqu_train, 'r', label='training Data ')
+    plt.xlabel('alpha')
+    plt.ylabel('R^2')
+    plt.legend()
+    plt.show()
+
+#We create a dictionary of parameter values:
+    parameters1 = [{'alpha': [0.001, 0.1, 1, 10, 100, 1000, 10000, 100000, 100000]}]
+    RR = Ridge()
+    Grid1 = GridSearchCV(RR, parameters1, cv=4)
+    Grid1.fit(x_data[['horsepower', 'curb-weight', 'engine-size', 'highway-mpg']], y_data)
+    BestRR = Grid1.best_estimator_
+    print(BestRR.score(x_test[['horsepower', 'curb-weight', 'engine-size', 'highway-mpg']], y_test))
+    print("")
+
+    parameters2 = [{'alpha': [0.001, 0.1, 1, 10, 100, 1000, 10000, 100000, 100000], 'normalize': [True, False]}]
+    Grid2 = GridSearchCV(Ridge(), parameters2, cv=4)
+    Grid2.fit(x_data[['horsepower', 'curb-weight', 'engine-size', 'highway-mpg']], y_data)
+    BestRR2 = Grid2.best_estimator_
+    print(BestRR2.score(x_test[['horsepower', 'curb-weight', 'engine-size', 'highway-mpg']], y_test))
 
 def main():
     other_path = "https://s3-api.us-geo.objectstorage.softlayer.net/cf-courses-data/CognitiveClass/DA0101EN/auto.csv"
@@ -502,3 +738,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
