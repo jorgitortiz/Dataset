@@ -738,32 +738,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-   
-import dash
-import dash_core_components as dcc
-import dash_html_components as html
-from dash.dependencies import Input, Output
 
-app = dash.Dash()
-app.layout = html.Div([
-    dcc.Dropdown(
-        id='my-id',
-        options=[
-            {'label': 'Jorge Ortiz', 'value': 'Jorge'},
-            {'label': 'Maria Jose', 'value': 'Majo'},
-        ],
-		placeholder="Select the name",
-
-    ),
-    html.Div(id='my-div')
-])
-
-@app.callback(
-    Output('my-div', 'children'),
-    [Input('my-id', 'value')])
-def update_output(value):
-    return 'Quien es el amor de tu vida "{}"'.format(value)
-
-
-if __name__ == '__main__':
-    app.run_server(debug=True)
