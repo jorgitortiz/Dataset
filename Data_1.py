@@ -739,3 +739,147 @@ def main():
 if __name__ == "__main__":
     main()
 
+import dash
+import dash_core_components as dcc
+import dash_html_components as html
+from dash.dependencies import Input, Output
+
+app = dash.Dash()
+app.layout = html.Div([
+    dcc.Dropdown(
+        id='my-id',
+        options=[
+            {'label': 'Jorge Ortiz', 'value': 'Jorge'},
+            {'label': ‘Eduardo Aguirre’, 'value': ‘Eduardo’},
+        ],
+		placeholder="Select the name",
+
+    ),
+    html.Div(id='my-div')
+])
+
+@app.callback(
+    Output('my-div', 'children'),
+    [Input('my-id', 'value')])
+def update_output(value):
+    return 'Quien es el mejor "{}"'.format(value)
+
+
+if __name__ == '__main__':
+    app.run_server(debug=True)
+
+#######################
+#####################
+##################
+
+import dash
+import dash_core_components as dcc
+import dash_html_components as html
+
+external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+
+app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+
+app.layout = html.Div([
+    html.Label('Select '),
+    dcc.Dropdown(
+        options=[
+            {'label': 'New York City', 'value': 'NYC'},
+            {'label': 'Montréal', 'value': 'MTL'},
+            {'label': 'San Francisco', 'value': 'SF'}
+        ],
+        value='MTL'
+    ),
+
+    html.Label('Multi-Select'),
+    dcc.Dropdown(
+        options=[
+            {'label': 'New York City', 'value': 'NYC'},
+            {'label': 'Montréal', 'value': 'MTL'},
+            {'label': 'San Francisco', 'value': 'SF'}
+        ],
+        value='MTL',
+        multi=True
+    ),
+
+    html.Label('Radio Items'),
+    dcc.RadioItems(
+        options=[
+            {'label': 'New York City', 'value': 'NYC'},
+            {'label': 'Montréal', 'value': 'MTL'},
+            {'label': 'San Francisco', 'value': 'SF'}
+        ],
+        value='MTL'
+    ),
+
+    html.Label('Checkboxes'),
+    dcc.Checklist(
+        options=[
+            {'label': 'New York City', 'value': 'NYC'},
+            {'label': 'Montréal', 'value': 'MTL'},
+            {'label': 'San Francisco', 'value': 'SF'}
+        ],
+        values=['MTL', 'SF']
+    ),
+
+    html.Label('Text Input'),
+    dcc.Input(value='Luchar por los dreams', type='text'),
+
+    html.Label('Mes de Nacimiento'),
+    dcc.Slider(
+        min=1,
+        max=12,
+        marks={i: '{}'.format(i) if i == 1 else str(i) for i in range(1, 13)},
+        value=6,
+    ),
+], style={'columnCount': 1})
+
+if __name__ == '__main__':
+    app.run_server(debug=True)
+
+#######################
+#####################
+##################
+
+# -*- coding: utf-8 -*-
+import pandas as pd
+import numpy as np
+import dash
+import dash_core_components as dcc
+import dash_html_components as html
+
+# external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+# app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+other_path = "https://s3-api.us-geo.objectstorage.softlayer.net/cf-courses-data/CognitiveClass/DA0101EN/auto.csv"
+df = pd.read_csv(other_path, header=None)
+headers = ["symboling", "normalized-losses", "make", "fuel-type", "aspiration", "num-of-doors", "body-style",
+           "drive-wheels", "engine-location", "wheel-base", "length", "width", "height", "curb-weight", "engine-type",
+           "num-of-cylinders", "engine-size", "fuel-system", "bore", "stroke", "compression-ratio", "horsepower",
+           "peak-rpm", "city-mpg", "highway-mpg", "price"]
+df.columns = headers
+
+app = dash.Dash(__name__)
+
+app.layout = html.Div(children=[
+    html.H1(children='Hello Dash'),
+
+    html.Div(children='''
+        Dash: A web application framework for Python.
+    '''),
+
+    dcc.Graph(
+        id='example-graph',
+        figure={
+            'data': [
+                {'x': df['horsepower'], 'y': df['price'], 'type': 'bar', 'name': 'Horsepower'},
+                {'x': df['engine-size'], 'y': df['price'], 'type': 'bar', 'name': 'Engine-size'},
+            ],
+            'layout': {
+                'title': 'Dash Data Visualization'
+            }
+        }
+    )
+])
+
+if __name__ == '__main__':
+    app.run_server(debug=True)
